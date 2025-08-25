@@ -108,7 +108,7 @@ function render() {
     elStatus.textContent = `Question ${index + 1} / ${NUM}`;
     elQuestion.textContent = (QUESTIONS[index]?.text ?? '');
     const img = QUESTIONS[index]?.image;
-    elImage.innerHTML = img ? `<img src="${img}" alt="question image" style="max-width:200px;height:auto;">` : '<img src="/no-image.svg" alt="question image" style="max-width:200px;height:auto;">';
+    elImage.innerHTML = img ? `<img src="./image/${img}" alt="question image" style="max-width:200px;height:auto;">` : '<img src="/no-image.svg" alt="question image" style="max-width:200px;height:auto;">';
 
     // selection state
     elBtnTrue.classList.toggle('selected', answers[index] === 'V');

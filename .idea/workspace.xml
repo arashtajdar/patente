@@ -2,7 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="0c3eebd6-6b80-4124-9e19-43f579e083d1" name="Changes" comment="Update">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/index.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -37,8 +40,16 @@
       <recent name="C:\Users\Mojdeh\PhpstormProjects\patente" />
     </key>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="PHP Script.migrate_images.php">
     <configuration name="index.php" type="PhpLocalRunConfigurationType" factoryName="PHP Console" temporary="true" path="$PROJECT_DIR$/index.php">
+      <CommandLine>
+        <PhpTestInterpreterSettings>
+          <option name="interpreterName" value="PHP 7.4" />
+        </PhpTestInterpreterSettings>
+      </CommandLine>
+      <method v="2" />
+    </configuration>
+    <configuration name="migrate_images.php" type="PhpLocalRunConfigurationType" factoryName="PHP Console" temporary="true" path="$PROJECT_DIR$/migrate_images.php">
       <CommandLine>
         <PhpTestInterpreterSettings>
           <option name="interpreterName" value="PHP 7.4" />
@@ -48,6 +59,7 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="PHP Script.migrate_images.php" />
         <item itemvalue="PHP Script.index.php" />
       </list>
     </recent_temporary>
@@ -61,7 +73,7 @@
       <option name="presentableId" value="Default" />
       <updated>1756117097343</updated>
       <workItem from="1756117098861" duration="4400000" />
-      <workItem from="1756123172191" duration="3894000" />
+      <workItem from="1756123172191" duration="5870000" />
     </task>
     <task id="LOCAL-00001" summary="init">
       <created>1756124417103</created>
@@ -119,7 +131,14 @@
       <option name="project" value="LOCAL" />
       <updated>1756126487287</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Update">
+      <created>1756128696651</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1756128696651</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

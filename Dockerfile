@@ -4,7 +4,7 @@ FROM php:8.2-apache
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/* \
-    && docker-php-ext-install pdo pdo_mysql
+    && docker-php-ext-install pdo pdo_mysql curl
 
 WORKDIR /var/www/html
 COPY . /var/www/html
