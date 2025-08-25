@@ -1,7 +1,7 @@
 <?php
 session_start();
 unset($_SESSION['quiz']);
-header('Location: test.php');
+header('Location: index.php');
 exit;
 
 

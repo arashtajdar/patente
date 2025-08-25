@@ -173,7 +173,7 @@ elSubmit.onclick = () => {
     render();
 };
 
-elRestart.onclick = () => { window.location.href = 'test.php'; };
+elRestart.onclick = () => { window.location.href = 'index.php'; };
 
 render();
 </script>
