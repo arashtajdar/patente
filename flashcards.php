@@ -1,0 +1,267 @@
+<?php
+// Simple Flashcards for `translation` table
+// Configure DB via environment variables or edit defaults below.
+
+declare(strict_types=1);
+
+// Error reporting (you can disable in production)
+ini_set('display_errors', '1');
+error_reporting(E_ALL);
+
+// Database configuration
+$dbHost = getenv('DB_HOST') ?: '127.0.0.1';
+$dbName = getenv('DB_NAME') ?: 'patente';
+$dbUser = getenv('DB_USER') ?: 'admin';
+$dbPass = getenv('DB_PASS') ?: 'admin';
+$dbCharset = 'utf8mb4';
+
+function getPdo(string $host, string $dbname, string $user, string $pass, string $charset): PDO {
+    $dsn = "mysql:host={$host};dbname={$dbname};charset={$charset}";
+    $options = [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES => false,
+    ];
+    return new PDO($dsn, $user, $pass, $options);
+}
+
+function jsonResponse($data, int $status = 200): void {
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
+
+// Handle API request
+if (isset($_GET['action']) && $_GET['action'] === 'random') {
+    try {
+        $pdo = getPdo($dbHost, $dbName, $dbUser, $dbPass, $dbCharset);
+        // Random row (sufficient for small-to-medium tables)
+        $stmt = $pdo->query('SELECT id, italian, english, persian FROM translation ORDER BY RAND() LIMIT 1');
+        $row = $stmt->fetch();
+        if (!$row) {
+            jsonResponse(['error' => 'No data in translation table'], 404);
+            exit;
+        }
+        jsonResponse(['data' => $row]);
+    } catch (Throwable $e) {
+        jsonResponse(['error' => 'Database error', 'detail' => $e->getMessage()], 500);
+    }
+    exit;
+}
+?>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flashcards • Italian → English/Persian</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #111827;
+            --muted: #94a3b8;
+            --text: #e5e7eb;
+            --accent: #60a5fa;
+            --accent-2: #34d399;
+            --danger: #f87171;
+            --shadow: 0 20px 40px rgba(0,0,0,0.35);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: radial-gradient(1200px 600px at 80% -10%, #1f2937 0%, var(--bg) 60%);
+            color: var(--text);
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+        }
+        .wrap {
+            width: min(920px, 100%);
+            display: grid;
+            gap: 18px;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+            color: #d1d5db;
+            letter-spacing: 0.3px;
+        }
+        .card {
+            background: linear-gradient(180deg, #0b1020 0%, var(--card) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: var(--shadow);
+        }
+        .italian {
+            font-size: clamp(22px, 4vw, 36px);
+            font-weight: 700;
+            line-height: 1.25;
+            letter-spacing: 0.2px;
+            margin: 0 0 8px 0;
+        }
+        .subtitle {
+            margin: 0 0 18px 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+        .answers {
+            display: grid;
+            gap: 12px;
+        }
+        .answer {
+            background: rgba(255,255,255,0.03);
+            border: 1px dashed rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 14px 16px;
+        }
+        .answer label { color: var(--muted); font-size: 12px; display: block; margin-bottom: 6px; }
+        .answer .value { font-size: 18px; }
+        .hidden .value { filter: blur(10px); opacity: 0.4; }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        button {
+            appearance: none;
+            border: 0;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.05s ease, background 0.2s ease;
+            color: #0b1020;
+        }
+        button:hover { transform: translateY(-1px); }
+        .primary { background: linear-gradient(135deg, var(--accent) 0%, #3b82f6 100%); color: white; }
+        .secondary { background: linear-gradient(135deg, var(--accent-2) 0%, #10b981 100%); color: white; }
+        .ghost { background: rgba(255,255,255,0.08); color: var(--text); border: 1px solid rgba(255,255,255,0.12); }
+        .danger { background: linear-gradient(135deg, var(--danger) 0%, #ef4444 100%); color: white; }
+        .status { color: var(--muted); font-size: 12px; margin-left: auto; align-self: center; }
+        .footer { text-align: center; color: var(--muted); font-size: 12px; padding: 8px; }
+        .rtl { direction: rtl; font-family: "Vazirmatn", Tahoma, Arial, sans-serif; }
+        @media (max-width: 560px) { .controls { justify-content: space-between; } }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <header>
+        <h1>Italian → English / Persian</h1>
+        <div class="status" id="status">Loading…</div>
+    </header>
+    <section class="card" id="card">
+        <div class="italian" id="italian">—</div>
+        <p class="subtitle">Tap buttons below to reveal translations.</p>
+
+        <div class="answers">
+            <div class="answer hidden" id="englishBox">
+                <label>English</label>
+                <div class="value" id="english">—</div>
+            </div>
+            <div class="answer hidden rtl" id="persianBox">
+                <label>Persian</label>
+                <div class="value" id="persian">—</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="ghost" id="reveal">Show answer</button>
+            <span class="status" id="idLabel"></span>
+            <button class="secondary" id="hideAll">Hide</button>
+            <button class="primary" id="next">Next ↻</button>
+        </div>
+    </section>
+    <div class="footer">Tip: Use Next to practice randomly. Hide resets the answers.</div>
+</div>
+
+<script>
+const els = {
+  status: document.getElementById('status'),
+  italian: document.getElementById('italian'),
+  english: document.getElementById('english'),
+  persian: document.getElementById('persian'),
+  englishBox: document.getElementById('englishBox'),
+  persianBox: document.getElementById('persianBox'),
+  reveal: document.getElementById('reveal'),
+  hideAll: document.getElementById('hideAll'),
+  next: document.getElementById('next'),
+  idLabel: document.getElementById('idLabel')
+};
+
+let current = null;
+
+function setLoading(isLoading) {
+  els.status.textContent = isLoading ? 'Loading…' : 'Ready';
+}
+
+function hideAnswers() {
+  els.englishBox.classList.add('hidden');
+  els.persianBox.classList.add('hidden');
+}
+
+function revealAll() {
+  els.englishBox.classList.remove('hidden');
+  els.persianBox.classList.remove('hidden');
+}
+
+async function fetchRandom() {
+  setLoading(true);
+  try {
+    const res = await fetch(window.location.pathname + '?action=random', {cache: 'no-store'});
+    if (!res.ok) throw new Error('Failed to load');
+    const json = await res.json();
+    if (!json || !json.data) throw new Error('No data');
+    current = json.data;
+    renderCard(current);
+  } catch (e) {
+    els.status.textContent = 'Error loading data';
+    console.error(e);
+  } finally {
+    setLoading(false);
+  }
+}
+
+function sanitize(text) {
+  if (text === null || text === undefined) return '—';
+  return String(text);
+}
+
+function renderCard(data) {
+  els.italian.textContent = sanitize(data.italian);
+  els.english.textContent = sanitize(data.english);
+  els.persian.textContent = sanitize(data.persian);
+  els.idLabel.textContent = data.id ? '#' + data.id : '';
+  hideAnswers();
+}
+
+// Event wiring
+els.reveal.addEventListener('click', revealAll);
+els.hideAll.addEventListener('click', hideAnswers);
+els.next.addEventListener('click', fetchRandom);
+
+// Keyboard shortcuts: S=Show, N/Space=Next, H=Hide
+window.addEventListener('keydown', (ev) => {
+  const key = ev.key.toLowerCase();
+  if (key === 's' || key === 'enter') revealAll();
+  if (key === 'h') hideAnswers();
+  if (key === 'n' || key === ' ') fetchRandom();
+});
+
+// Initial load
+fetchRandom();
+</script>
+</body>
+</html>
+
+

@@ -2,6 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="0c3eebd6-6b80-4124-9e19-43f579e083d1" name="Changes" comment="Update">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/php.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/php.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -37,7 +39,31 @@
       <recent name="C:\Users\Mojdeh\PhpstormProjects\patente" />
     </key>
   </component>
-  <component name="RunManager" selected="PHP Script.migrate_images.php">
+  <component name="RunManager" selected="PHP Script.extract_words.php">
+    <configuration name="build_word_stats.php" type="PhpLocalRunConfigurationType" factoryName="PHP Console" temporary="true" path="$PROJECT_DIR$/build_word_stats.php">
+      <CommandLine>
+        <PhpTestInterpreterSettings>
+          <option name="interpreterName" value="PHP 7.4" />
+        </PhpTestInterpreterSettings>
+      </CommandLine>
+      <method v="2" />
+    </configuration>
+    <configuration name="build_words.php" type="PhpLocalRunConfigurationType" factoryName="PHP Console" temporary="true" path="$PROJECT_DIR$/build_words.php">
+      <CommandLine>
+        <PhpTestInterpreterSettings>
+          <option name="interpreterName" value="PHP 7.4" />
+        </PhpTestInterpreterSettings>
+      </CommandLine>
+      <method v="2" />
+    </configuration>
+    <configuration name="extract_words.php" type="PhpLocalRunConfigurationType" factoryName="PHP Console" temporary="true" path="$PROJECT_DIR$/extract_words.php">
+      <CommandLine>
+        <PhpTestInterpreterSettings>
+          <option name="interpreterName" value="PHP 7.4" />
+        </PhpTestInterpreterSettings>
+      </CommandLine>
+      <method v="2" />
+    </configuration>
     <configuration name="index.php" type="PhpLocalRunConfigurationType" factoryName="PHP Console" temporary="true" path="$PROJECT_DIR$/index.php">
       <CommandLine>
         <PhpTestInterpreterSettings>
@@ -56,6 +82,9 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="PHP Script.extract_words.php" />
+        <item itemvalue="PHP Script.build_word_stats.php" />
+        <item itemvalue="PHP Script.build_words.php" />
         <item itemvalue="PHP Script.migrate_images.php" />
         <item itemvalue="PHP Script.index.php" />
       </list>
@@ -70,7 +99,11 @@
       <option name="presentableId" value="Default" />
       <updated>1756117097343</updated>
       <workItem from="1756117098861" duration="4400000" />
-      <workItem from="1756123172191" duration="6518000" />
+      <workItem from="1756123172191" duration="7310000" />
+      <workItem from="1756191926320" duration="2292000" />
+      <workItem from="1756806097260" duration="4790000" />
+      <workItem from="1756886402017" duration="8312000" />
+      <workItem from="1756975074443" duration="734000" />
     </task>
     <task id="LOCAL-00001" summary="init">
       <created>1756124417103</created>
@@ -142,7 +175,14 @@
       <option name="project" value="LOCAL" />
       <updated>1756130961285</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="Update">
+      <created>1756131603444</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1756131603444</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
