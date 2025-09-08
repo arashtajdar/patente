@@ -41,7 +41,7 @@ function authenticate(PDO $pdo): ?array {
         return null;
     }
     try {
-        $stmt = $pdo->prepare('SELECT id, username, password FROM user WHERE username = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id, username, password FROM users WHERE username = ? LIMIT 1');
         $stmt->execute([$username]);
         $user = $stmt->fetch();
         if (!$user) return null;
