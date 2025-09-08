@@ -3,3 +3,5 @@ run.php
 /migrate_images.php
 /build_word_stats.php
 /extract_words.php
+/translate_persian.php
+.idea/workspace.xml
