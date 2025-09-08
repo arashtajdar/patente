@@ -32,19 +32,92 @@ function jsonResponse($data, int $status = 200): void {
 }
 
 // Handle API request
-if (isset($_GET['action']) && $_GET['action'] === 'random') {
+// Helper: authenticate user from URL (?user=...&pass=...)
+function authenticate(PDO $pdo): ?array {
+    $username = $_GET['user'] ?? null;
+    $password = $_GET['pass'] ?? null;
+
+    if (!$username || !$password) {
+        return null;
+    }
+    try {
+        $stmt = $pdo->prepare('SELECT id, username, password FROM user WHERE username = ? LIMIT 1');
+        $stmt->execute([$username]);
+        $user = $stmt->fetch();
+        if (!$user) return null;
+        $hash = $user['password'] ?? '';
+        $ok = false;
+        // Support both hashed and plain passwords
+        if (is_string($hash) && $hash !== '' && strlen($hash) > 20) {
+            $ok = password_verify($password, $hash);
+        } else {
+            $ok = hash_equals((string)$hash, (string)$password);
+        }
+        if ($ok) {
+            return ['id' => (int)$user['id'], 'username' => (string)$user['username']];
+        }
+        return null;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+// Handle API request
+if (isset($_GET['action'])) {
+    $action = $_GET['action'];
     try {
         $pdo = getPdo($dbHost, $dbName, $dbUser, $dbPass, $dbCharset);
-        // Random row (sufficient for small-to-medium tables)
-        $stmt = $pdo->query('SELECT id, italian, english, persian FROM translation ORDER BY RAND() LIMIT 1');
-        $row = $stmt->fetch();
-        if (!$row) {
-            jsonResponse(['error' => 'No data in translation table'], 404);
+        $user = authenticate($pdo);
+        if (!$user) {
+            jsonResponse(['error' => 'Unauthorized: provide valid ?user=&pass='], 401);
             exit;
         }
-        jsonResponse(['data' => $row]);
+        if ($action === 'random') {
+            // Random row for current user, excluding items with score > 5
+            $stmt = $pdo->prepare(
+                'SELECT t.id, t.italian, t.english, t.persian
+                 FROM translation t
+                 LEFT JOIN user_translation_stats s
+                   ON s.translation_id = t.id AND s.user_id = ?
+                 WHERE (s.correct IS NULL OR s.correct <= 5)
+                 ORDER BY RAND()
+                 LIMIT 1'
+            );
+            $stmt->execute([(int)$user['id']]);
+            $row = $stmt->fetch();
+            if (!$row) {
+                jsonResponse(['error' => 'No data in translation table'], 404);
+                exit;
+            }
+            jsonResponse(['data' => $row, 'user' => $user]);
+            exit;
+        }
+        if ($action === 'answer') {
+            $raw = file_get_contents('php://input');
+            $payload = json_decode($raw ?: 'null', true) ?: [];
+            $translationId = isset($payload['translationId']) ? (int)$payload['translationId'] : 0;
+            $result = isset($payload['result']) ? (string)$payload['result'] : '';
+            if ($translationId <= 0 || ($result !== 'correct' && $result !== 'wrong')) {
+                jsonResponse(['error' => 'Bad request'], 400);
+                exit;
+            }
+            $delta = $result === 'correct' ? 1 : -1;
+            // Use INSERT ... ON DUPLICATE KEY UPDATE with clamp at >= 0
+            $stmt = $pdo->prepare('INSERT INTO user_translation_stats (user_id, translation_id, correct)
+                VALUES (?, ?, ?)
+                ON DUPLICATE KEY UPDATE correct = GREATEST(correct + VALUES(correct), 0), updated_at = CURRENT_TIMESTAMP');
+            $stmt->execute([(int)$user['id'], $translationId, $delta]);
+            // Return new value
+            $stmt2 = $pdo->prepare('SELECT correct FROM user_translation_stats WHERE user_id = ? AND translation_id = ?');
+            $stmt2->execute([(int)$user['id'], $translationId]);
+            $row = $stmt2->fetch();
+            $correct = $row ? (int)$row['correct'] : 0;
+            jsonResponse(['ok' => true, 'correct' => $correct]);
+            exit;
+        }
+        jsonResponse(['error' => 'Unknown action'], 400);
     } catch (Throwable $e) {
-        jsonResponse(['error' => 'Database error', 'detail' => $e->getMessage()], 500);
+        jsonResponse(['error' => 'Server error', 'detail' => $e->getMessage()], 500);
     }
     exit;
 }
@@ -180,6 +253,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'random') {
             <span class="status" id="idLabel"></span>
             <button class="secondary" id="hideAll">Hide</button>
             <button class="primary" id="next">Next ↻</button>
+            <button class="ghost" id="wrong">Wrong</button>
+            <button class="ghost" id="correct">Correct</button>
         </div>
     </section>
     <div class="footer">Tip: Use Next to practice randomly. Hide resets the answers.</div>
@@ -200,6 +275,7 @@ const els = {
 };
 
 let current = null;
+let authQS = '';
 
 function setLoading(isLoading) {
   els.status.textContent = isLoading ? 'Loading…' : 'Ready';
@@ -218,7 +294,7 @@ function revealAll() {
 async function fetchRandom() {
   setLoading(true);
   try {
-    const res = await fetch(window.location.pathname + '?action=random', {cache: 'no-store'});
+    const res = await fetch(window.location.pathname + '?action=random' + authQS, {cache: 'no-store'});
     if (!res.ok) throw new Error('Failed to load');
     const json = await res.json();
     if (!json || !json.data) throw new Error('No data');
@@ -249,6 +325,40 @@ function renderCard(data) {
 els.reveal.addEventListener('click', revealAll);
 els.hideAll.addEventListener('click', hideAnswers);
 els.next.addEventListener('click', fetchRandom);
+els.correct = document.getElementById('correct');
+els.wrong = document.getElementById('wrong');
+async function confirmAndAnswer(result) {
+  if (!current || !current.id) return;
+  const label = result === 'correct' ? 'Correct' : 'Wrong';
+  const msg = `Confirm ${label} for:\n${sanitize(current.italian)}\n→ ${sanitize(current.english)} / ${sanitize(current.persian)}?`;
+  const ok = window.confirm(msg);
+  if (!ok) return;
+  try {
+    await sendAnswer(result);
+    fetchRandom();
+  } catch (e) {
+    // sendAnswer already sets status; stay on current card on failure
+  }
+}
+async function sendAnswer(result) {
+  if (!current || !current.id) return;
+  try {
+    const res = await fetch(window.location.pathname + '?action=answer' + authQS, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ translationId: current.id, result })
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(json && json.error ? json.error : 'Failed');
+    // Optionally show feedback
+    els.status.textContent = 'Score: ' + (json && typeof json.correct === 'number' ? json.correct : '—');
+  } catch (e) {
+    console.error(e);
+    els.status.textContent = 'Save failed';
+  }
+}
+els.correct.addEventListener('click', () => confirmAndAnswer('correct'));
+els.wrong.addEventListener('click', () => confirmAndAnswer('wrong'));
 
 // Keyboard shortcuts: S=Show, N/Space=Next, H=Hide
 window.addEventListener('keydown', (ev) => {
@@ -256,9 +366,22 @@ window.addEventListener('keydown', (ev) => {
   if (key === 's' || key === 'enter') revealAll();
   if (key === 'h') hideAnswers();
   if (key === 'n' || key === ' ') fetchRandom();
+  if (key === '1') confirmAndAnswer('wrong');
+  if (key === '2') confirmAndAnswer('correct');
 });
 
 // Initial load
+// Build auth query string passthrough from current URL (?user=&pass=)
+(function initAuthQS(){
+  const p = new URLSearchParams(window.location.search);
+  const u = p.get('user');
+  const pw = p.get('pass');
+  authQS = '';
+  if (u && pw) {
+    const qp = new URLSearchParams({ user: u, pass: pw });
+    authQS = '&' + qp.toString();
+  }
+})();
 fetchRandom();
 </script>
 </body>
