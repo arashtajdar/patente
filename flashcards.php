@@ -295,8 +295,8 @@ if (isset($_GET['action'])) {
             <button class="primary" id="next">Next ↻</button>
 
             <span class="status" id="idLabel"></span>
-            <button class="ghost" id="wrong">Wrong</button>
-            <button class="ghost" id="correct">Correct</button>
+            <button class="ghost" id="wrong" style="background-color: red">Wrong</button>
+            <button class="ghost" id="correct" style="background-color: green">Correct</button>
         </div>
     </section>
     <div class="footer">Tip: Use Next to practice randomly. Hide resets the answers.</div>
