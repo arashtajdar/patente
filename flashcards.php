@@ -101,11 +101,11 @@ if (isset($_GET['action'])) {
                 jsonResponse(['error' => 'Bad request'], 400);
                 exit;
             }
-            $delta = $result === 'correct' ? 1 : -1;
-            // Use INSERT ... ON DUPLICATE KEY UPDATE with clamp at >= 0
+            $delta = $result === 'correct' ? 1 : 0;
+            // If correct → increment by 1; if wrong → reset to 0
             $stmt = $pdo->prepare('INSERT INTO user_translation_stats (user_id, translation_id, correct)
                 VALUES (?, ?, ?)
-                ON DUPLICATE KEY UPDATE correct = GREATEST(correct + VALUES(correct), 0), updated_at = CURRENT_TIMESTAMP');
+                ON DUPLICATE KEY UPDATE correct = CASE WHEN VALUES(correct) = 1 THEN correct + 1 ELSE 0 END, updated_at = CURRENT_TIMESTAMP');
             $stmt->execute([(int)$user['id'], $translationId, $delta]);
             // Return new value
             $stmt2 = $pdo->prepare('SELECT correct FROM user_translation_stats WHERE user_id = ? AND translation_id = ?');
@@ -250,9 +250,10 @@ if (isset($_GET['action'])) {
 
         <div class="controls">
             <button class="ghost" id="reveal">Show answer</button>
-            <span class="status" id="idLabel"></span>
             <button class="secondary" id="hideAll">Hide</button>
             <button class="primary" id="next">Next ↻</button>
+
+            <span class="status" id="idLabel"></span>
             <button class="ghost" id="wrong">Wrong</button>
             <button class="ghost" id="correct">Correct</button>
         </div>
