@@ -31,7 +31,7 @@ function jsonResponse($data, int $status = 200): void {
     echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
 
-function computeProgress(PDO $pdo, int $userId): int {
+function computeProgress(PDO $pdo, int $userId): float {
     // Sum user's correct scores
     $stmtSum = $pdo->prepare('SELECT COALESCE(SUM(correct), 0) AS total FROM user_translation_stats WHERE user_id = ?');
     $stmtSum->execute([$userId]);
@@ -42,10 +42,11 @@ function computeProgress(PDO $pdo, int $userId): int {
     $countRow = $pdo->query('SELECT COUNT(*) AS cnt FROM translation')->fetch();
     $totalTranslations = (int)($countRow['cnt'] ?? 0);
     $denominator = $totalTranslations * 5;
-    if ($denominator <= 0) return 0;
+    if ($denominator <= 0) return 0.0;
 
-    $percent = (int)floor(min(100, max(0, ($totalCorrect / $denominator) * 100)));
-    return $percent;
+    $percent = ($totalCorrect / $denominator) * 100.0;
+    $percent = max(0.0, min(100.0, $percent));
+    return round($percent, 2);
 }
 
 // Handle API request
@@ -343,8 +344,9 @@ async function fetchRandom() {
     current = json.data;
     renderCard(current);
     if (typeof json.progress === 'number') {
-      els.status.textContent = 'Ready • ' + json.progress + '%';
-      if (els.progressBig) els.progressBig.textContent = json.progress + '%';
+      const pctStr = json.progress.toFixed(2) + '%';
+      els.status.textContent = 'Ready • ' + pctStr;
+      if (els.progressBig) els.progressBig.textContent = pctStr;
     }
   } catch (e) {
     els.status.textContent = 'Error loading data';
@@ -398,10 +400,10 @@ async function sendAnswer(result) {
     if (!res.ok) throw new Error(json && json.error ? json.error : 'Failed');
     // Show feedback including progress
     const score = (json && typeof json.correct === 'number') ? json.correct : '—';
-    const pct = (json && typeof json.progress === 'number') ? (json.progress + '%') : '—';
+    const pct = (json && typeof json.progress === 'number') ? json.progress.toFixed(2) + '%' : '—';
     els.status.textContent = 'Score: ' + score + ' • ' + pct;
     if (els.progressBig && typeof json.progress === 'number') {
-      els.progressBig.textContent = json.progress + '%';
+      els.progressBig.textContent = json.progress.toFixed(2) + '%';
     }
   } catch (e) {
     console.error(e);
