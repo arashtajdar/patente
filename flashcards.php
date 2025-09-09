@@ -31,6 +31,23 @@ function jsonResponse($data, int $status = 200): void {
     echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
 
+function computeProgress(PDO $pdo, int $userId): int {
+    // Sum user's correct scores
+    $stmtSum = $pdo->prepare('SELECT COALESCE(SUM(correct), 0) AS total FROM user_translation_stats WHERE user_id = ?');
+    $stmtSum->execute([$userId]);
+    $sumRow = $stmtSum->fetch();
+    $totalCorrect = (int)($sumRow['total'] ?? 0);
+
+    // Count all translations (each with max score 5)
+    $countRow = $pdo->query('SELECT COUNT(*) AS cnt FROM translation')->fetch();
+    $totalTranslations = (int)($countRow['cnt'] ?? 0);
+    $denominator = $totalTranslations * 5;
+    if ($denominator <= 0) return 0;
+
+    $percent = (int)floor(min(100, max(0, ($totalCorrect / $denominator) * 100)));
+    return $percent;
+}
+
 // Handle API request
 // Helper: authenticate user from URL (?user=...&pass=...)
 function authenticate(PDO $pdo): ?array {
@@ -89,7 +106,8 @@ if (isset($_GET['action'])) {
                 jsonResponse(['error' => 'No data in translation table'], 404);
                 exit;
             }
-            jsonResponse(['data' => $row, 'user' => $user]);
+            $progress = computeProgress($pdo, (int)$user['id']);
+            jsonResponse(['data' => $row, 'user' => $user, 'progress' => $progress]);
             exit;
         }
         if ($action === 'answer') {
@@ -112,7 +130,8 @@ if (isset($_GET['action'])) {
             $stmt2->execute([(int)$user['id'], $translationId]);
             $row = $stmt2->fetch();
             $correct = $row ? (int)$row['correct'] : 0;
-            jsonResponse(['ok' => true, 'correct' => $correct]);
+            $progress = computeProgress($pdo, (int)$user['id']);
+            jsonResponse(['ok' => true, 'correct' => $correct, 'progress' => $progress]);
             exit;
         }
         jsonResponse(['error' => 'Unknown action'], 400);
@@ -225,6 +244,26 @@ if (isset($_GET['action'])) {
         .footer { text-align: center; color: var(--muted); font-size: 12px; padding: 8px; }
         .rtl { direction: rtl; font-family: "Vazirmatn", Tahoma, Arial, sans-serif; }
         @media (max-width: 560px) { .controls { justify-content: space-between; } }
+        .progressBig {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 50;
+            text-align: right;
+            font-size: clamp(42px, 10vw, 96px);
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: 1px;
+            color: #ffffff;
+            filter: drop-shadow(0 8px 24px rgba(16,185,129,0.25));
+            background: linear-gradient(135deg, var(--accent-2), #22c55e);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+            pointer-events: none;
+            user-select: none;
+        }
     </style>
 </head>
 <body>
@@ -234,6 +273,7 @@ if (isset($_GET['action'])) {
         <div class="status" id="status">Loading…</div>
     </header>
     <section class="card" id="card">
+        <div class="progressBig" id="progressBig">0%</div>
         <div class="italian" id="italian">—</div>
         <p class="subtitle">Tap buttons below to reveal translations.</p>
 
@@ -274,6 +314,7 @@ const els = {
   next: document.getElementById('next'),
   idLabel: document.getElementById('idLabel')
 };
+els.progressBig = document.getElementById('progressBig');
 
 let current = null;
 let authQS = '';
@@ -301,6 +342,10 @@ async function fetchRandom() {
     if (!json || !json.data) throw new Error('No data');
     current = json.data;
     renderCard(current);
+    if (typeof json.progress === 'number') {
+      els.status.textContent = 'Ready • ' + json.progress + '%';
+      if (els.progressBig) els.progressBig.textContent = json.progress + '%';
+    }
   } catch (e) {
     els.status.textContent = 'Error loading data';
     console.error(e);
@@ -351,8 +396,13 @@ async function sendAnswer(result) {
     });
     const json = await res.json().catch(() => null);
     if (!res.ok) throw new Error(json && json.error ? json.error : 'Failed');
-    // Optionally show feedback
-    els.status.textContent = 'Score: ' + (json && typeof json.correct === 'number' ? json.correct : '—');
+    // Show feedback including progress
+    const score = (json && typeof json.correct === 'number') ? json.correct : '—';
+    const pct = (json && typeof json.progress === 'number') ? (json.progress + '%') : '—';
+    els.status.textContent = 'Score: ' + score + ' • ' + pct;
+    if (els.progressBig && typeof json.progress === 'number') {
+      els.progressBig.textContent = json.progress + '%';
+    }
   } catch (e) {
     console.error(e);
     els.status.textContent = 'Save failed';
