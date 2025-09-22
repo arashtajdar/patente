@@ -377,10 +377,10 @@ els.correct = document.getElementById('correct');
 els.wrong = document.getElementById('wrong');
 async function confirmAndAnswer(result) {
   if (!current || !current.id) return;
-  const label = result === 'correct' ? 'Correct' : 'Wrong';
-  const msg = `Confirm ${label} for:\n${sanitize(current.italian)}\n→ ${sanitize(current.english)} / ${sanitize(current.persian)}?`;
-  const ok = window.confirm(msg);
-  if (!ok) return;
+  // const label = result === 'correct' ? 'Correct' : 'Wrong';
+  // const msg = `Confirm ${label} for:\n${sanitize(current.italian)}\n→ ${sanitize(current.english)} / ${sanitize(current.persian)}?`;
+  // const ok = window.confirm(msg);
+  // if (!ok) return;
   try {
     await sendAnswer(result);
     fetchRandom();
