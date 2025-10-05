@@ -38,10 +38,10 @@ function computeProgress(PDO $pdo, int $userId): float {
     $sumRow = $stmtSum->fetch();
     $totalCorrect = (int)($sumRow['total'] ?? 0);
 
-    // Count all translations (each with max score 5)
+    // Count all translations (each with max score 3)
     $countRow = $pdo->query('SELECT COUNT(*) AS cnt FROM translation')->fetch();
     $totalTranslations = (int)($countRow['cnt'] ?? 0);
-    $denominator = $totalTranslations * 5;
+    $denominator = $totalTranslations * 3;
     if ($denominator <= 0) return 0.0;
 
     $percent = ($totalCorrect / $denominator) * 100.0;
@@ -97,7 +97,7 @@ if (isset($_GET['action'])) {
                  FROM translation t
                  LEFT JOIN user_translation_stats s
                    ON s.translation_id = t.id AND s.user_id = ?
-                 WHERE (s.correct IS NULL OR s.correct <= 5)
+                 WHERE (s.correct IS NULL OR s.correct <= 3)
                  ORDER BY RAND()
                  LIMIT 1'
             );
