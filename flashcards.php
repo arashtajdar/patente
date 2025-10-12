@@ -15,8 +15,8 @@ $dbUser = getenv('DB_USER') ?: 'admin';
 $dbPass = getenv('DB_PASS') ?: 'admin';
 $dbCharset = 'utf8mb4';
 
-function getPdo(string $host, string $dbname, string $user, string $pass, string $charset): PDO {
-    $dsn = "mysql:host={$host};dbname={$dbname};charset={$charset}";
+function getPdo(string $host, string $port, string $dbname, string $user, string $pass, string $charset): PDO {
+    $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset={$charset}";
     $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -84,7 +84,7 @@ function authenticate(PDO $pdo): ?array {
 if (isset($_GET['action'])) {
     $action = $_GET['action'];
     try {
-        $pdo = getPdo($dbHost, $dbName, $dbUser, $dbPass, $dbCharset);
+        $pdo = getPdo($dbHost, $dbPort, $dbName, $dbUser, $dbPass, $dbCharset);
         $user = authenticate($pdo);
         if (!$user) {
             jsonResponse(['error' => 'Unauthorized: provide valid ?user=&pass='], 401);
