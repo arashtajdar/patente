@@ -94,19 +94,21 @@ $page = max(1, (int)($_GET['page'] ?? 1));
 $limit = 10;
 $offset = ($page - 1) * $limit;
 
-$filterCorrect = $_GET['filter_correct'] ?? '';
-$filterWrong = $_GET['filter_wrong'] ?? '';
+$filterStats = $_GET['filter_stats'] ?? '';
 $searchText = trim($_GET['search'] ?? '');
 
 // Build WHERE conditions
 $whereConditions = [];
 $params = [];
 
-if ($filterCorrect === '1') {
+if ($filterStats === 'correct') {
     $whereConditions[] = 'COALESCE(stats.correct, 0) > 0';
 }
-if ($filterWrong === '1') {
+if ($filterStats === 'wrong') {
     $whereConditions[] = 'COALESCE(stats.wrong, 0) > 0';
+}
+if ($filterStats === 'none') {
+    $whereConditions[] = 'COALESCE(stats.correct, 0) = 0 AND COALESCE(stats.wrong, 0) = 0';
 }
 if ($searchText !== '') {
     $whereConditions[] = 'q.text LIKE ?';
@@ -378,18 +380,12 @@ $questions = $stmt->fetchAll();
             </div>
             
             <div class="filter-group">
-                <label for="filter_correct">Filter by correct answers:</label>
-                <select id="filter_correct" name="filter_correct">
+                <label for="filter_stats">Filter by answer statistics:</label>
+                <select id="filter_stats" name="filter_stats">
                     <option value="">All questions</option>
-                    <option value="1" <?php echo $filterCorrect === '1' ? 'selected' : ''; ?>>Questions with correct answers</option>
-                </select>
-            </div>
-            
-            <div class="filter-group">
-                <label for="filter_wrong">Filter by wrong answers:</label>
-                <select id="filter_wrong" name="filter_wrong">
-                    <option value="">All questions</option>
-                    <option value="1" <?php echo $filterWrong === '1' ? 'selected' : ''; ?>>Questions with wrong answers</option>
+                    <option value="correct" <?php echo $filterStats === 'correct' ? 'selected' : ''; ?>>Correct answers > 0</option>
+                    <option value="wrong" <?php echo $filterStats === 'wrong' ? 'selected' : ''; ?>>Wrong answers > 0</option>
+                    <option value="none" <?php echo $filterStats === 'none' ? 'selected' : ''; ?>>No wrong or correct</option>
                 </select>
             </div>
             
