@@ -1,5 +1,5 @@
 <?php
-// Fetch 30 random questions each page load
+// Authentication check
 $dbHost = getenv('DB_HOST') ?: '127.0.0.1';
 $dbPort = getenv('DB_PORT') ?: '3306';
 $dbName = getenv('DB_NAME') ?: 'patente';
@@ -10,6 +10,65 @@ $pdo = new PDO($dsn, $dbUser, $dbPass, [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
 ]);
+
+// Helper: authenticate user from URL (?user=...&pass=...)
+function authenticate(PDO $pdo): ?array {
+    $username = $_GET['user'] ?? null;
+    $password = $_GET['pass'] ?? null;
+
+    if (!$username || !$password) {
+        return null;
+    }
+    try {
+        $stmt = $pdo->prepare('SELECT id, username, password FROM users WHERE username = ? LIMIT 1');
+        $stmt->execute([$username]);
+        $user = $stmt->fetch();
+        if (!$user) return null;
+        $hash = $user['password'] ?? '';
+        $ok = false;
+        // Support both hashed and plain passwords
+        if (is_string($hash) && $hash !== '' && strlen($hash) > 20) {
+            $ok = password_verify($password, $hash);
+        } else {
+            $ok = hash_equals((string)$hash, (string)$password);
+        }
+        if ($ok) {
+            return ['id' => (int)$user['id'], 'username' => (string)$user['username']];
+        }
+        return null;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+// Check authentication
+$authenticatedUser = authenticate($pdo);
+if (!$authenticatedUser) {
+    http_response_code(401);
+    echo '<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Unauthorized - Patente Quiz</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 24px; text-align: center; }
+        .container { max-width: 600px; margin: 100px auto; }
+        h1 { color: #dc3545; }
+        p { color: #666; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Unauthorized Access</h1>
+        <p>Please provide valid credentials via URL parameters: ?user=username&pass=password</p>
+    </div>
+</body>
+</html>';
+    exit;
+}
+
+// Fetch 30 random questions each page load
 
 // Optional varying seed to ensure different order
 $seed = random_int(1, PHP_INT_MAX);
@@ -52,6 +111,7 @@ if (!$questions) {
     <h2>Patente Quiz</h2>
 
     <div id="status" class="status"></div>
+    <div id="userInfo" class="status" style="color: #28a745; font-weight: bold;">Welcome, <?php echo htmlspecialchars($authenticatedUser['username']); ?>!</div>
 
     <div id="question" class="question"></div>
     <div id="image" class="image"></div>
@@ -173,7 +233,16 @@ elSubmit.onclick = () => {
     render();
 };
 
-elRestart.onclick = () => { window.location.href = 'index.php'; };
+elRestart.onclick = () => { 
+    const params = new URLSearchParams(window.location.search);
+    const user = params.get('user');
+    const pass = params.get('pass');
+    let url = 'index.php';
+    if (user && pass) {
+        url += `?user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`;
+    }
+    window.location.href = url; 
+};
 
 render();
 </script>
