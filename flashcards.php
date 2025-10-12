@@ -270,7 +270,10 @@ if (isset($_GET['action'])) {
 <body>
 <div class="wrap">
     <header>
-        <h1>Italian → English / Persian</h1>
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <h1 style="margin: 0;">Italian → English / Persian</h1>
+            <a href="index.php<?php echo '?user=' . urlencode($_GET['user'] ?? '') . '&pass=' . urlencode($_GET['pass'] ?? ''); ?>" style="background: #6c757d; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 14px;">🏠 HOME</a>
+        </div>
         <div class="status" id="status">Loading…</div>
     </header>
     <section class="card" id="card">

@@ -252,7 +252,10 @@ $authParams = '?user=' . urlencode($user['username']) . '&pass=' . urlencode($_G
 <body>
 <div class="container">
     <div class="header">
-        <h1>🎓 Patente App</h1>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h1 style="margin: 0;">🎓 Patente App</h1>
+            <a href="index.php<?php echo $authParams; ?>" style="background: rgba(255, 255, 255, 0.2); color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 14px; border: 1px solid rgba(255, 255, 255, 0.3);">🏠 HOME</a>
+        </div>
         <p>Your Italian Driving License Learning Platform</p>
         <div class="user-info">
             Welcome back, <strong><?php echo htmlspecialchars($user['username']); ?></strong>!

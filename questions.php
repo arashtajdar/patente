@@ -362,7 +362,10 @@ $questions = $stmt->fetchAll();
 <body>
 <div class="container">
     <header>
-        <h1>Questions List</h1>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h1 style="margin: 0;">Questions List</h1>
+            <a href="index.php<?php echo '?user=' . urlencode($user['username']) . '&pass=' . urlencode($_GET['pass']); ?>" class="btn btn-secondary" style="text-decoration: none;">🏠 HOME</a>
+        </div>
         <div class="user-info">Welcome, <?php echo htmlspecialchars($user['username']); ?>!</div>
         
         <form method="GET" class="filters">
