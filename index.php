@@ -11,10 +11,10 @@ $pdo = new PDO($dsn, $dbUser, $dbPass, [
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
 ]);
 
-// Helper: authenticate user from URL (?user=...&pass=...)
+// Helper: authenticate user from URL (?user=...&pass=...) or POST data
 function authenticate(PDO $pdo): ?array {
-    $username = $_GET['user'] ?? null;
-    $password = $_GET['pass'] ?? null;
+    $username = $_GET['user'] ?? $_POST['user'] ?? null;
+    $password = $_GET['pass'] ?? $_POST['pass'] ?? null;
 
     if (!$username || !$password) {
         return null;
@@ -301,6 +301,15 @@ elSubmit.onclick = async () => {
         formData.append('action', 'submit_quiz');
         formData.append('answers', JSON.stringify(answers));
         formData.append('question_ids', JSON.stringify(questionIds));
+        
+        // Include authentication parameters in POST request
+        const params = new URLSearchParams(window.location.search);
+        const user = params.get('user');
+        const pass = params.get('pass');
+        if (user && pass) {
+            formData.append('user', user);
+            formData.append('pass', pass);
+        }
         
         const response = await fetch(window.location.pathname, {
             method: 'POST',
