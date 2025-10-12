@@ -68,6 +68,62 @@ if (!$authenticatedUser) {
     exit;
 }
 
+// Handle quiz submission via POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'submit_quiz') {
+    header('Content-Type: application/json');
+    
+    try {
+        $answers = json_decode($_POST['answers'] ?? '[]', true);
+        $questionIds = json_decode($_POST['question_ids'] ?? '[]', true);
+        
+        if (empty($answers) || empty($questionIds)) {
+            echo json_encode(['error' => 'No answers or questions provided']);
+            exit;
+        }
+        
+        $userId = $authenticatedUser['id'];
+        
+        // Update stats for each question
+        foreach ($questionIds as $index => $questionId) {
+            $userAnswer = $answers[$index] ?? null;
+            if ($userAnswer === null) continue;
+            
+            // Get correct answer from database
+            $stmt = $pdo->prepare('SELECT answer FROM question WHERE id = ?');
+            $stmt->execute([$questionId]);
+            $question = $stmt->fetch();
+            
+            if (!$question) continue;
+            
+            $correctAnswer = strtoupper(trim($question['answer']));
+            $userAnswerUpper = strtoupper($userAnswer);
+            
+            // Determine if answer is correct
+            $isCorrect = ($correctAnswer === 'V' && $userAnswerUpper === 'V') || 
+                        ($correctAnswer === 'F' && $userAnswerUpper === 'F');
+            
+            // Update user_question_stats
+            if ($isCorrect) {
+                $stmt = $pdo->prepare('INSERT INTO user_question_stats (user_id, question_id, correct, wrong) 
+                                     VALUES (?, ?, 1, 0)
+                                     ON DUPLICATE KEY UPDATE correct = correct + 1, updated_at = CURRENT_TIMESTAMP');
+            } else {
+                $stmt = $pdo->prepare('INSERT INTO user_question_stats (user_id, question_id, correct, wrong) 
+                                     VALUES (?, ?, 0, 1)
+                                     ON DUPLICATE KEY UPDATE wrong = wrong + 1, updated_at = CURRENT_TIMESTAMP');
+            }
+            $stmt->execute([$userId, $questionId]);
+        }
+        
+        echo json_encode(['success' => true, 'message' => 'Quiz results saved successfully']);
+        exit;
+        
+    } catch (Exception $e) {
+        echo json_encode(['error' => 'Failed to save quiz results: ' . $e->getMessage()]);
+        exit;
+    }
+}
+
 // Fetch 30 random questions each page load
 
 // Optional varying seed to ensure different order
@@ -140,6 +196,7 @@ if (!$questions) {
     <div id="results" style="margin-top:16px; display:none;">
         <div id="resultsSummary" style="margin-bottom:8px; font-weight:bold;"></div>
         <div id="resultsList"></div>
+        <div id="saveStatus" style="margin-top:8px; font-size:14px; color:#666;"></div>
     </div>
 </div>
 
@@ -163,6 +220,7 @@ const elRestart = document.getElementById('btnRestart');
 const elResults = document.getElementById('results');
 const elResultsSummary = document.getElementById('resultsSummary');
 const elResultsList = document.getElementById('resultsList');
+const elSaveStatus = document.getElementById('saveStatus');
 
 function render() {
     elStatus.textContent = `Question ${index + 1} / ${NUM}`;
@@ -226,11 +284,44 @@ function updateResults() {
     elResults.style.display = 'block';
 }
 
-elSubmit.onclick = () => {
+elSubmit.onclick = async () => {
     if (submitted) return;
     submitted = true;
     updateResults();
     render();
+    
+    // Show saving status
+    elSaveStatus.textContent = 'Saving your results...';
+    elSaveStatus.style.color = '#0078D7';
+    
+    // Send results to server
+    try {
+        const questionIds = QUESTIONS.map(q => q.id);
+        const formData = new FormData();
+        formData.append('action', 'submit_quiz');
+        formData.append('answers', JSON.stringify(answers));
+        formData.append('question_ids', JSON.stringify(questionIds));
+        
+        const response = await fetch(window.location.pathname, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            elSaveStatus.textContent = '✅ Quiz results saved successfully!';
+            elSaveStatus.style.color = '#28a745';
+            console.log('Quiz results saved successfully');
+        } else {
+            elSaveStatus.textContent = '❌ Failed to save results: ' + result.error;
+            elSaveStatus.style.color = '#dc3545';
+            console.error('Failed to save results:', result.error);
+        }
+    } catch (error) {
+        elSaveStatus.textContent = '❌ Error saving quiz results';
+        elSaveStatus.style.color = '#dc3545';
+        console.error('Error saving quiz results:', error);
+    }
 };
 
 elRestart.onclick = () => { 
