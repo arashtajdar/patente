@@ -164,7 +164,10 @@ if (!$questions) {
 </head>
 <body>
 <div class="container">
-    <h2>Patente Quiz</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="margin: 0;">Patente Quiz</h2>
+        <a href="index.php<?php echo '?user=' . urlencode($authenticatedUser['username']) . '&pass=' . urlencode($_GET['pass']); ?>" style="background: #6c757d; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 14px;">🏠 HOME</a>
+    </div>
 
     <div id="status" class="status"></div>
     <div id="userInfo" class="status" style="color: #28a745; font-weight: bold;">Welcome, <?php echo htmlspecialchars($authenticatedUser['username']); ?>!</div>
