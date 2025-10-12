@@ -337,7 +337,7 @@ elRestart.onclick = () => {
     const params = new URLSearchParams(window.location.search);
     const user = params.get('user');
     const pass = params.get('pass');
-    let url = 'index.php';
+    let url = 'quiz.php';
     if (user && pass) {
         url += `?user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`;
     }
@@ -348,5 +348,3 @@ render();
 </script>
 </body>
 </html>
-
-
