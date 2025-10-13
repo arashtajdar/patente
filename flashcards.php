@@ -10,10 +10,16 @@ error_reporting(E_ALL);
 
 // Database configuration
 $dbHost = getenv('DB_HOST') ?: '127.0.0.1';
+$dbPort = getenv('DB_PORT') ?: '3306';
 $dbName = getenv('DB_NAME') ?: 'patente';
 $dbUser = getenv('DB_USER') ?: 'admin';
 $dbPass = getenv('DB_PASS') ?: 'admin';
 $dbCharset = 'utf8mb4';
+
+// Ensure all variables are defined
+if (!isset($dbPort)) {
+    $dbPort = '3306';
+}
 
 function getPdo(string $host, string $port, string $dbname, string $user, string $pass, string $charset): PDO {
     $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset={$charset}";
